@@ -16,6 +16,12 @@ import random
 
 VERSION = "v0.1"
 
+# Game modes.
+# The values are displayed to and selected by the user after each story.
+NEW_GAME = "Pick a new story"
+REPLAY   = "Listen to the same story again"
+QUIT     = "That's all for now"
+
 # Placeholders. These should actually be read from files...
 TEMP_STORY_STYLES = (
         "Animal Play",
@@ -28,14 +34,16 @@ TEMP_WORD_LISTS = (
         "Rhyme Time"
         )
 
+
 def main():
+    """Welcome user and enter the main program loop."""
     Welcome()
 
-    mode = "NEW_GAME"
+    mode = NEW_GAME
 
-    while mode != "QUIT":
+    while mode != QUIT:
 
-        if mode == "NEW_GAME":
+        if mode == NEW_GAME:
             story_type = getStoryType()
             word_list = getWordList(story_type)
 
@@ -46,6 +54,7 @@ def main():
 
 
 def Welcome():
+    """Display the title splash, and explain the program to the user."""
     print("Story Circus", VERSION)
     print()
     print("This is a silly story generator.")
@@ -53,22 +62,42 @@ def Welcome():
 
 
 def getStoryType():
+    """Allow user to select the story layout."""
     print()
     print("Choose the story you would like to hear.")
     return pickFromList(TEMP_STORY_STYLES)
 
 
 def getWordList(story_type):
+    """Allow user to select the word list for the chosen story layout."""
     print()
     print("Choose the word list you would like me to use.")
     return pickFromList(TEMP_WORD_LISTS)
 
 
+def getNextMode():
+    """Ask the user what to do after the story has finished."""
+    print()
+    print("What would you like to do now?")
+    opts = (REPLAY, NEW_GAME, QUIT)
+    return pickFromList(opts)
+
+
 def pickFromList(options):
+    """Allow user to select an option from a list.
+
+    All options are numbered. The user must enter the number for their choice.
+
+    Arguments:
+        options -- list or tuple containing the options
+    """
+
+    # Print out the options.
     i = 0
     for i in range(0, len(options)):
         print("%2i. %s" %(i + 1, options[i]))
 
+    # Wait until user enters the number for a valid option.
     choice = 0
     while choice < 1 or choice > len(options):
         text = input("Enter the number for your option: ")
@@ -85,10 +114,6 @@ def generateStory(story_type, word_list):
 def printStory(story):
     print()
     print(story)
-
-
-def getNextMode():
-    return "QUIT"
 
 
 if __name__ == "__main__":

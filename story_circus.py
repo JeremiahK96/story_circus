@@ -16,6 +16,18 @@ import random
 
 VERSION = "v0.1"
 
+# Placeholders. These should actually be read from files...
+TEMP_STORY_STYLES = (
+        "Animal Play",
+        "Fun at the Party",
+        "Rhyme Time"
+        )
+TEMP_WORD_LISTS = (
+        "Animal Play",
+        "Fun at the Party",
+        "Rhyme Time"
+        )
+
 def main():
     Welcome()
 
@@ -41,11 +53,29 @@ def Welcome():
 
 
 def getStoryType():
-    return ""
+    print()
+    print("Choose the story you would like to hear.")
+    return pickFromList(TEMP_STORY_STYLES)
 
 
 def getWordList(story_type):
-    return ""
+    print()
+    print("Choose the word list you would like me to use.")
+    return pickFromList(TEMP_WORD_LISTS)
+
+
+def pickFromList(options):
+    i = 0
+    for i in range(0, len(options)):
+        print("%2i. %s" %(i + 1, options[i]))
+
+    choice = 0
+    while choice < 1 or choice > len(options):
+        text = input("Enter the number for your option: ")
+        if text.isdigit():
+            choice = int(text)
+
+    return options[choice - 1]
 
 
 def generateStory(story_type, word_list):

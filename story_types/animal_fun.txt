@@ -1,0 +1,65 @@
+Animal Fun
+
+Animal AdjPositive AdjNegative AdjColor ActionPresent PrepHow
+
+Animal
+    fox
+    frog
+    cat
+    rabbit
+    hawk
+    horse
+    deer
+    dog
+    cow
+    snake
+    squirrel
+    coyote
+    skunk
+
+AdjPositive
+    quick
+    silent
+    strong
+    speedy
+    happy
+
+AdjNegative
+    lazy
+    noisy
+    stupid
+    sleeping
+    dirty
+    stinky
+    wet
+
+AdjColor
+    brown
+    black
+    gray
+    white
+    red
+    orange
+    yellow
+    green
+    blue
+    purple
+    pink
+
+ActionPresent
+    jumps
+    leaps
+    dives
+    flies
+    runs
+    steps
+    rolls
+    crawls
+
+PrepHow
+    over
+    under
+    through
+    around
+    past
+    onto

@@ -1,0 +1,33 @@
+Animal Fun
+
+Animal AdjPositive AdjNegative AdjColor ActionPresent PrepHow
+
+Animal
+    fox
+    frog
+    cat
+
+AdjPositive
+    quick
+    silent
+    strong
+
+AdjNegative
+    lazy
+    noisy
+    stupid
+
+AdjColor
+    brown
+    black
+    gray
+
+ActionPresent
+    jumps
+    leaps
+    dives
+
+PrepHow
+    over
+    under
+    through

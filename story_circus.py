@@ -17,15 +17,16 @@ import random
 # Add files for story types and word lists, and read from them.
 VERSION = "v0.2"
 
+
 class StoryRecipe:
     """Data and functions needed for a story blueprint."""
 
-    name = None         # name of the story shown in menu
-    labels = []         # list of valid labels for this story
-    recipe = []         # list of strings and labels to display in order
+    name = None     # name of the story shown in menu
+    labels = []     # list of labels required for this story
+    recipe = []     # list of strings and labels to display in order
 
     def __init__(self, filename):
-        """Read story data from file, and format and store it."""
+        """Read story data from file. Format and store it."""
         file = open(filename, 'r')
         self.name = file.readline().strip()
         self.labels = self.__readLabels(file).split()
@@ -62,6 +63,51 @@ class StoryRecipe:
             else:
                 self.recipe.append(story[start:label_start])
                 start = label_start
+
+
+class WordList:
+    """Data and functions needed for a wordlist."""
+
+    name = None     # name of the wordlist shown in the menu
+    labels = []     # list of labels included in this wordlist
+    words = {}      # dict matching label to its list of random word options
+
+    def __init__(self, filename):
+        file = open(filename, 'r')
+        self.name = file.readline().strip()
+        self.__readWords(file)
+        file.close()
+
+    def __readLabels(self, file):
+        """Read the next non-blank line."""
+        while True:
+            x = file.readline().strip()
+            if x:
+                return x
+
+    def __readWords(self, file):
+        """Read each label and its random word options."""
+        label = None
+        line = file.readline()
+        while line:
+            line = line.strip()
+
+            # If line is blank, the next non-blank line is a label.
+            if line == "":
+                label = None
+
+            # If previous line was blank, this one is a label.
+            elif label == None:
+                label = line
+                if label not in self.labels:
+                    self.labels.append(label)
+                    self.words[label] = []
+
+            # Otherwise, this line is a word option for the label.
+            else:
+                self.words[label].append(line)
+
+            line = file.readline()
 
 
 # Game modes.

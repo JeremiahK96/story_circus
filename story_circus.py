@@ -14,7 +14,55 @@
 
 import random
 
-VERSION = "v0.1"
+# Add files for story types and word lists, and read from them.
+VERSION = "v0.2"
+
+class StoryRecipe:
+    """Data and functions needed for a story blueprint."""
+
+    name = None         # name of the story shown in menu
+    labels = []         # list of valid labels for this story
+    recipe = []         # list of strings and labels to display in order
+
+    def __init__(self, filename):
+        """Read story data from file, and format and store it."""
+        file = open(filename, 'r')
+        self.name = file.readline().strip()
+        self.labels = self.__readLabels(file).split()
+        story = file.read().strip()
+        file.close()
+        self.__splitRecipe(story)
+
+    def __readLabels(self, file):
+        """Read the next non-blank line."""
+        while True:
+            x = file.readline().strip()
+            if x:
+                return x
+
+    def __splitRecipe(self, story):
+        """Split story into plaintext and labels. Append to self.recipe."""
+        start = 0
+        while True:
+            label_start = story.find('{', start)
+
+            # If there are no more labels...
+            if label_start < 0:
+                self.recipe.append(story[start:])
+                return
+
+            label_end = story.find('}', label_start + 1)
+
+            # It this is a label...
+            if label_start == start:
+                self.recipe.append(story[label_start:label_end + 1])
+                start = label_end + 1
+
+            # Otherwise, this must be plain text...
+            else:
+                self.recipe.append(story[start:label_start])
+                start = label_start
+
 
 # Game modes.
 # The values are displayed to and selected by the user after each story.
@@ -44,10 +92,10 @@ def main():
     while mode != QUIT:
 
         if mode == NEW_GAME:
-            story_type = getStoryType()
-            word_list = getWordList(story_type)
+            recipe = pickStoryRecipe()
+            wordlist = pickWordList(recipe)
 
-        story = generateStory(story_type, word_list)
+        story = generateStory(recipe, wordlist)
         printStory(story)
 
         mode = getNextMode()
@@ -61,14 +109,14 @@ def Welcome():
     print("Enjoy fun stories with randomized elements!")
 
 
-def getStoryType():
+def pickStoryRecipe():
     """Allow user to select the story layout."""
     print()
     print("Choose the story you would like to hear.")
     return pickFromList(TEMP_STORY_STYLES)
 
 
-def getWordList(story_type):
+def pickWordList(story_type):
     """Allow user to select the word list for the chosen story layout."""
     print()
     print("Choose the word list you would like me to use.")

@@ -1,16 +1,14 @@
 Fun at the Party
 
-Person ActionPast AdjWhich NounObject AdjWhich PrepHow NounTarget
-
-Person/Which/Their
-    I/my/my
-    you/your/your
-    some stranger/some stranger's/his
-    the butler/the butler's/his
-    Mr. Jackson/Mr. Jackson's/his
-    Miss Lizzy/Miss Lizzy's/her
-    Bob/Bob's/his
-    Mindy/Mindy's/her
+Person
+    I
+    you
+    some stranger
+    the butler
+    Mr. Jackson
+    Miss Lizzy
+    Bob
+    Mindy
 
 ActionPast
     threw
@@ -23,8 +21,13 @@ ActionPast
 AdjWhich
     the
     a
-    %Person/Which
-    %Person1/Their
+    your
+    some stranger's
+    the butler's
+    Mr Jackson's
+    Miss Lizzy's
+    Bob's
+    Mindy's
 
 NounObject
     ball

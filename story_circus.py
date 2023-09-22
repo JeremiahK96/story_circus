@@ -22,12 +22,12 @@ VERSION = "v0.2"
 class StoryRecipe:
     """Data and functions needed for a story blueprint."""
 
-    name = None     # name of the story shown in menu
-    labels = []     # list of labels required for this story
-    recipe = []     # list of strings and labels to display in order
-
     def __init__(self, filename):
         """Read story data from file. Format and store it."""
+        self.name = None     # name of the story shown in menu
+        self.labels = []     # list of labels required for this story
+        self.recipe = []     # list of strings and labels to display in order
+
         file = open(filename, 'r')
         self.name = file.readline().strip()
         self.labels = self.__readLabels(file).split()
@@ -69,11 +69,11 @@ class StoryRecipe:
 class WordList:
     """Data and functions needed for a wordlist."""
 
-    name = None     # name of the wordlist shown in the menu
-    labels = []     # list of labels included in this wordlist
-    words = {}      # dict matching label to its list of random word options
-
     def __init__(self, filename):
+        self.name = None     # name of the wordlist shown in the menu
+        self.labels = []     # list of labels included in this wordlist
+        self.words = {}      # dict matching label to its list of random word options
+
         file = open(filename, 'r')
         self.name = file.readline().strip()
         self.__readWords(file)
@@ -117,18 +117,7 @@ NEW_GAME = "Pick a new story"
 REPLAY   = "Listen to the same story again"
 QUIT     = "That's all for now"
 
-# Placeholders. These should actually be read from files...
-TEMP_STORY_STYLES = (
-        "Animal Play",
-        "Fun at the Party",
-        "Rhyme Time"
-        )
-TEMP_WORD_LISTS = (
-        "Animal Play",
-        "Fun at the Party",
-        "Rhyme Time"
-        )
-
+# Data file directories for story recipes and word lists.
 STORY_DIR = "data/"
 WORDS_DIR = "data/"
 
@@ -165,8 +154,8 @@ def loadStoryRecipes():
     """Load data from all .story files into a list. Return the list."""
     recipes = []
 
-    for file in os.listdir(STORY_DIR):
-        if len(file) > 5 and file[-6:] == ".story":
+    for file in sorted(os.listdir(STORY_DIR)):
+        if len(file) >= 6 and file[-6:] == ".story":
             recipes.append(StoryRecipe(STORY_DIR + file))
 
     return recipes
@@ -176,8 +165,8 @@ def loadWordLists():
     """Load data from all .words files into a list. Return the list."""
     wordlists = []
 
-    for file in os.listdir(WORDS_DIR):
-        if len(file) > 5 and file[-6:] == ".words":
+    for file in sorted(os.listdir(WORDS_DIR)):
+        if len(file) >= 6 and file[-6:] == ".words":
             wordlists.append(WordList(WORDS_DIR + file))
 
     return wordlists
@@ -263,7 +252,6 @@ def expandRandomWord(section, wordlist):
     end = section.find('}', begin + 1)
 
     label = section[begin + 1:end]
-
     return random.choice(wordlist.words[label])
 
 

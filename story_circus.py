@@ -241,8 +241,30 @@ def pickFromList(options):
     return choice - 1
 
 
-def generateStory(story_type, word_list):
-    return "The quick red fox jumps over the lazy brown dog."
+def generateStory(recipe, wordlist):
+    """Generate a story using a recipe and wordlist."""
+    story = ""
+
+    for section in recipe.recipe:
+        story += expandRandomWord(section, wordlist)
+
+    return story
+
+
+def expandRandomWord(section, wordlist):
+    """Expand random word in section.
+
+    If section is not a label, just return it as it is.
+    Otherwise, return a random word for its label in wordlist.
+    """
+    begin = section.find('{')
+    if begin == -1:
+        return section
+    end = section.find('}', begin + 1)
+
+    label = section[begin + 1:end]
+
+    return random.choice(wordlist.words[label])
 
 
 def printStory(story):

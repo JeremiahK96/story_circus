@@ -211,9 +211,13 @@ def pickFromList(options):
     """Allow user to select an option from a list.
 
     All options are numbered. The user must enter the number for their choice.
+    If there is only 1 option, it is chosen automatically.
 
     Arguments:
-        options -- list or tuple containing the options
+        options -- iterable containing the options
+
+    Returns:
+        the chosen number minus one, as an int
     """
 
     # Print out the options.
@@ -221,6 +225,11 @@ def pickFromList(options):
     for opt in options:
         i += 1
         print("%2i. %s" %(i, opt))
+
+    # If there is only 1 option, return it.
+    if i == 1:
+        print("Choosing option 1 automatically...")
+        return 0
 
     # Wait until user enters the number for a valid option.
     choice = 0

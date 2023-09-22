@@ -138,14 +138,14 @@ def main():
     Welcome()
 
     recipes = loadStoryRecipes()
-    #wordlists = loadWordLists()
+    wordlists = loadWordLists()
 
     mode = NEW_GAME
     while mode != QUIT:
 
         if mode == NEW_GAME:
             recipe = pickStoryRecipe(recipes)
-            wordlist = pickWordList(recipe)
+            wordlist = pickWordList(wordlists, recipe)
 
         story = generateStory(recipe, wordlist)
         printStory(story)
@@ -172,6 +172,17 @@ def loadStoryRecipes():
     return recipes
 
 
+def loadWordLists():
+    """Load data from all .words files into a list. Return the list."""
+    wordlists = []
+
+    for file in os.listdir(WORDS_DIR):
+        if len(file) > 5 and file[-6:] == ".words":
+            wordlists.append(WordList(WORDS_DIR + file))
+
+    return wordlists
+
+
 def pickStoryRecipe(recipes):
     """Allow user to select the story layout."""
     print()
@@ -180,11 +191,12 @@ def pickStoryRecipe(recipes):
     return recipes[pickFromList(names)]
 
 
-def pickWordList(story_type):
+def pickWordList(wordlists, story_type):
     """Allow user to select the word list for the chosen story layout."""
     print()
     print("Choose the word list you would like me to use.")
-    return pickFromList(TEMP_WORD_LISTS)
+    names = map(lambda r: r.name, wordlists)
+    return wordlists[pickFromList(names)]
 
 
 def getNextMode():

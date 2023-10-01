@@ -28,6 +28,9 @@ class StoryRecipe:
         self.labels = []     # list of labels required for this story
         self.recipe = []     # list of strings and labels to display in order
 
+        # list of IDs of compatible wordlists
+        self.safe_wordlists = []
+
         file = open(filename, 'r')
         self.name = file.readline().strip()
         self.labels = self.__readLabels(file).split()
@@ -46,34 +49,45 @@ class StoryRecipe:
         """Split story into plaintext and labels. Append to self.recipe."""
         start = 0
         while True:
-            label_start = story.find('{', start)
+            label_begin = story.find('{', start)
 
             # If there are no more labels...
-            if label_start < 0:
+            if label_begin < 0:
                 self.recipe.append(story[start:])
                 return
 
-            label_end = story.find('}', label_start + 1)
+            label_end = story.find('}', label_begin + 1)
 
             # It this is a label...
-            if label_start == start:
-                self.recipe.append(story[label_start:label_end + 1])
+            if label_begin == start:
+                self.recipe.append(story[label_begin:label_end + 1])
                 start = label_end + 1
 
             # Otherwise, this must be plain text...
             else:
-                self.recipe.append(story[start:label_start])
-                start = label_start
+                self.recipe.append(story[start:label_begin])
+                start = label_begin
+
+    def checkWordListCompatibility(self, wordlists):
+        """Find compatible wordlists for this recipe, mark them."""
+        for i in range(len(wordlists)):
+            for label in wordlists[i].labels:
+                if label not in self.labels:
+                    break
+            else:
+                self.safe_wordlists.append(i)
 
 
 class WordList:
     """Data and functions needed for a wordlist."""
 
     def __init__(self, filename):
-        self.name = None     # name of the wordlist shown in the menu
-        self.labels = []     # list of labels included in this wordlist
-        self.words = {}      # dict matching label to its list of random word options
+        """Read wordlist data from file. Format and store it."""
+        self.name = None      # name of the wordlist shown in the menu
+        self.labels = []      # list of labels included in this wordlist
+        self.words = {}       # dict matching label to its list of random words
 
+        # Open file, read data, and save it into this object.
         file = open(filename, 'r')
         self.name = file.readline().strip()
         self.__readWords(file)
@@ -128,6 +142,7 @@ def main():
 
     recipes = loadStoryRecipes()
     wordlists = loadWordLists()
+    checkStoryCompatibilities(recipes, wordlists)
 
     mode = NEW_GAME
     while mode != QUIT:
@@ -172,6 +187,12 @@ def loadWordLists():
     return wordlists
 
 
+def checkStoryCompatibilities(recipes, wordlists):
+    """Check label compatibility between recipes and wordlists."""
+    for recipe in recipes:
+        recipe.checkWordListCompatibility(wordlists)
+
+
 def pickStoryRecipe(recipes):
     """Allow user to select the story layout."""
     print()
@@ -180,12 +201,17 @@ def pickStoryRecipe(recipes):
     return recipes[pickFromList(names)]
 
 
-def pickWordList(wordlists, story_type):
+def pickWordList(wordlists, recipe):
     """Allow user to select the word list for the chosen story layout."""
     print()
     print("Choose the word list you would like me to use.")
-    names = map(lambda r: r.name, wordlists)
-    return wordlists[pickFromList(names)]
+    ids = []
+    names = []
+    for i in recipe.safe_wordlists:
+        ids.append(i)
+        names.append(wordlists[i].name)
+    choice = pickFromList(names)
+    return wordlists[ids[choice]]
 
 
 def getNextMode():

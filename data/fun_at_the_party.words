@@ -17,6 +17,8 @@ ActionPast
     flung
     rolled
     pushed
+    hid
+    catapulted
 
 AdjWhich
     the
@@ -38,13 +40,15 @@ NounObject
     chair
     hat
     shoes
+    wig
 
 PrepHow
-    through
+    into
     over
     under
-    into
     around
+    off
+    behind
 
 NounTarget
     basketball hoop
@@ -56,3 +60,5 @@ NounTarget
     fence
     bathroom
     stairs
+    chandelier
+    bushes

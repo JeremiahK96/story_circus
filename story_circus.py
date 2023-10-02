@@ -277,8 +277,19 @@ def expandRandomWord(section, wordlist):
         return section
     end = section.find('}', begin + 1)
 
-    label = section[begin + 1:end]
-    return random.choice(wordlist.words[label])
+    full_label = section[begin + 1:end]
+    label_end = full_label.find(':')
+
+    # If this label has no suffix, just pick a random option.
+    if label_end == -1:
+        return random.choice(wordlist.words[full_label])
+
+    label = full_label[:label_end]
+    suffix = full_label[label_end + 1:]
+
+    # Temporary: Desctuctively pop an option so it won't be picked again.
+    i = random.randrange(0, len(wordlist.words[label]))
+    return wordlist.words[label].pop(i)
 
 
 def printStory(story):

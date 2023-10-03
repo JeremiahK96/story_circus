@@ -15,8 +15,7 @@
 import os
 import random
 
-# Add pauses to allow the user to read more easily.
-__version__ = "v0.4"
+__version__ = "v1.0"
 __author__ = "Jeremiah Knol"
 
 
@@ -197,7 +196,7 @@ class Story:
 
     def display(self):
         """Print the generated story."""
-        os.system('clear')
+        clearScreen()
         print(self.story)
 
 
@@ -274,7 +273,7 @@ def checkStoryCompatibilities(recipes, wordlists):
 
 def pickStoryRecipe(recipes):
     """Allow user to select the story layout."""
-    os.system('clear')
+    clearScreen()
     print("Choose the story you would like to hear.")
     names = map(lambda r: r.name, recipes)
     return recipes[pickFromList(names)]
@@ -364,6 +363,14 @@ def waitForEnter():
     """Wait until User presses the Enter key."""
     print()
     input("Press enter to continue...")
+
+
+def clearScreen():
+    """Clear the terminal output."""
+    if os.name == 'nt':
+        os.system('cls')
+    else:
+        os.system('clear')
 
 
 if __name__ == "__main__":

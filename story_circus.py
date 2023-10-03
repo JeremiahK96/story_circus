@@ -333,32 +333,6 @@ def pickFromList(options):
     return choice - 1
 
 
-def expandRandomWord(section, wordlist):
-    """Expand random word in section.
-
-    If section is not a label, just return it as it is.
-    Otherwise, return a random word for its label in wordlist.
-    """
-    begin = section.find('{')
-    if begin == -1:
-        return section
-    end = section.find('}', begin + 1)
-
-    full_label = section[begin + 1:end]
-    label_end = full_label.find(':')
-
-    # If this label has no suffix, just pick a random option.
-    if label_end == -1:
-        return random.choice(wordlist.words[full_label])
-
-    label = full_label[:label_end]
-    suffix = full_label[label_end + 1:]
-
-    # Temporary: Desctuctively pop an option so it won't be picked again.
-    i = random.randrange(0, len(wordlist.words[label]))
-    return wordlist.words[label].pop(i)
-
-
 def waitForEnter():
     """Wait until User presses the Enter key."""
     print()

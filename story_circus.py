@@ -15,8 +15,8 @@
 import os
 import random
 
-# Add files for story types and word lists, and read from them.
-VERSION = "v0.2"
+# Properly handle numbered labels in story recipes.
+VERSION = "v0.3"
 
 
 class StoryRecipe:
@@ -70,6 +70,7 @@ class StoryRecipe:
 
     def checkWordListCompatibility(self, wordlists):
         """Find compatible wordlists for this recipe, mark them."""
+        self.safe_wordlists = []
         for i in range(len(wordlists)):
             for label in wordlists[i].labels:
                 if label not in self.labels:
@@ -125,6 +126,80 @@ class WordList:
             line = file.readline()
 
 
+class RandomLabel:
+    """Randomized label data and functions for this label's expansion."""
+
+    def __init__(self, label, words):
+        self.label = label  # label used in the story recipe
+        self.words = words  # list of primary/secondary word combos
+        self.ids = {}       # memory ids for this label, popped from pool
+        self.pool = self.words.copy()   # remaining word options for ids
+
+    def byID(self, id):
+        """Expands this label by id.
+
+        If the id does not exist, pop an option from the pool and create it.
+        """
+        if id not in self.ids.keys():
+            i = random.randrange(len(self.pool))
+            self.ids[id] = self.pool.pop(i)
+
+        return self.ids[id]
+
+
+
+class RandomLabelDict:
+    """Dictionary of RandomLabel objects, with function to expand them."""
+
+    def __init__(self, recipe, wordlist):
+        self.random_labels = {}
+        for label in recipe.labels:
+            new_label = RandomLabel(label, wordlist.words[label])
+            self.random_labels[label] = new_label
+
+    def expandLabel(self, full_label):
+        """Expand a label in this list, handling any extra features."""
+
+        # Find the label and suffix.
+        label_end = full_label.find(':')
+        label = full_label[1:label_end]
+        id = full_label[label_end + 1:-1]
+
+        # Find the RandomLabel which matches this label.
+        rand_label = self.random_labels[label]
+
+        # Handle the simple case. Just the label, no suffix.
+        if label_end == -1:
+            return random.choice(rand_label.words)
+
+        # Handle cases where the suffix is an id for the label.
+        return rand_label.byID(id)
+
+
+class Story:
+    """Single-use story object. Create, generate, display, and discard."""
+
+    def __init__(self, recipe, wordlist):
+        self.story = None
+        self.recipe = recipe.recipe
+        self.labels = RandomLabelDict(recipe, wordlist)
+
+    def generate(self):
+        """Generate the story, expanding all random labels."""
+        self.story = ""
+
+        for section in self.recipe:
+            if section[0] != '{' or section[-1] != '}':
+                self.story += section
+            else:
+                self.story += self.labels.expandLabel(section)
+
+    def display(self):
+        """Print the generated story."""
+        print()
+        print(self.story)
+
+
 # Game modes.
 # The values are displayed to and selected by the user after each story.
 NEW_GAME = "Pick a new story"
@@ -151,8 +226,9 @@ def main():
             recipe = pickStoryRecipe(recipes)
             wordlist = pickWordList(wordlists, recipe)
 
-        story = generateStory(recipe, wordlist)
-        printStory(story)
+        story = Story(recipe, wordlist)
+        story.generate()
+        story.display()
 
         mode = getNextMode()
 
@@ -256,16 +332,6 @@ def pickFromList(options):
     return choice - 1
 
 
-def generateStory(recipe, wordlist):
-    """Generate a story using a recipe and wordlist."""
-    story = ""
-
-    for section in recipe.recipe:
-        story += expandRandomWord(section, wordlist)
-
-    return story
-
-
 def expandRandomWord(section, wordlist):
     """Expand random word in section.
 
@@ -290,11 +356,6 @@ def expandRandomWord(section, wordlist):
     # Temporary: Desctuctively pop an option so it won't be picked again.
     i = random.randrange(0, len(wordlist.words[label]))
     return wordlist.words[label].pop(i)
-
-
-def printStory(story):
-    print()
-    print(story)
 
 
 if __name__ == "__main__":

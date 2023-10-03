@@ -15,8 +15,9 @@
 import os
 import random
 
-# Properly handle numbered labels in story recipes.
-VERSION = "v0.3"
+# Add pauses to allow the user to read more easily.
+__version__ = "v0.4"
+__author__ = "Jeremiah Knol"
 
 
 class StoryRecipe:
@@ -196,7 +197,7 @@ class Story:
 
     def display(self):
         """Print the generated story."""
-        print()
+        os.system('clear')
         print(self.story)
 
 
@@ -214,6 +215,7 @@ WORDS_DIR = "data/"
 def main():
     """Welcome user and enter the main program loop."""
     Welcome()
+    waitForEnter()
 
     recipes = loadStoryRecipes()
     wordlists = loadWordLists()
@@ -229,13 +231,14 @@ def main():
         story = Story(recipe, wordlist)
         story.generate()
         story.display()
+        waitForEnter()
 
         mode = getNextMode()
 
 
 def Welcome():
     """Display the title splash, and explain the program to the user."""
-    print("Story Circus", VERSION)
+    print("Story Circus", __version__, "by", __author__)
     print()
     print("This is a silly story generator.")
     print("Enjoy fun stories with randomized elements!")
@@ -271,7 +274,7 @@ def checkStoryCompatibilities(recipes, wordlists):
 
 def pickStoryRecipe(recipes):
     """Allow user to select the story layout."""
-    print()
+    os.system('clear')
     print("Choose the story you would like to hear.")
     names = map(lambda r: r.name, recipes)
     return recipes[pickFromList(names)]
@@ -279,7 +282,6 @@ def pickStoryRecipe(recipes):
 
 def pickWordList(wordlists, recipe):
     """Allow user to select the word list for the chosen story layout."""
-    print()
     print("Choose the word list you would like me to use.")
     ids = []
     names = []
@@ -356,6 +358,12 @@ def expandRandomWord(section, wordlist):
     # Temporary: Desctuctively pop an option so it won't be picked again.
     i = random.randrange(0, len(wordlist.words[label]))
     return wordlist.words[label].pop(i)
+
+
+def waitForEnter():
+    """Wait until User presses the Enter key."""
+    print()
+    input("Press enter to continue...")
 
 
 if __name__ == "__main__":

@@ -33,37 +33,44 @@ class StoryRecipe:
 
         file = open(filename, 'r')
         self.name = file.readline().strip()
-        self.labels = self.__readLabels(file).split()
         story = file.read().strip()
         file.close()
+
         self.__splitRecipe(story)
 
-    def __readLabels(self, file):
-        """Read the next non-blank line."""
-        while True:
-            x = file.readline().strip()
-            if x:
-                return x
-
     def __splitRecipe(self, story):
-        """Split story into plaintext and labels. Append to self.recipe."""
+        """Split story into plaintext and labels.
+
+        Each section is appended to self.recipe.
+        Each label is appended to self.labels."""
         start = 0
         while True:
             label_begin = story.find('{', start)
 
-            # If there are no more labels...
+            # If there are no more labels, the rest is plaintext.
             if label_begin < 0:
                 self.recipe.append(story[start:])
                 return
 
             label_end = story.find('}', label_begin + 1)
+            full_label = story[label_begin:label_end + 1]
 
             # It this is a label...
             if label_begin == start:
-                self.recipe.append(story[label_begin:label_end + 1])
+
+                # Add it to the story.
+                self.recipe.append(full_label)
                 start = label_end + 1
 
-            # Otherwise, this must be plain text...
+                # Get just the label without any suffix.
+                suffix_start = full_label.find(':')
+                label = full_label[1:suffix_start]
+
+                # Add it into the list of labels, without allowing copies.
+                if label not in self.labels:
+                    self.labels.append(label)
+
+            # If this is not a label, it must be plain text.
             else:
                 self.recipe.append(story[start:label_begin])
                 start = label_begin

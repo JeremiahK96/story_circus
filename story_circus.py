@@ -79,8 +79,8 @@ class StoryRecipe:
         """Find compatible wordlists for this recipe, mark them."""
         self.safe_wordlists = []
         for i in range(len(wordlists)):
-            for label in wordlists[i].labels:
-                if label not in self.labels:
+            for label in self.labels:
+                if label not in wordlists[i].labels:
                     break
             else:
                 self.safe_wordlists.append(i)

@@ -15,7 +15,7 @@
 import os
 import random
 
-__version__ = "v1.0"
+__version__ = "v1.1"
 __author__ = "Jeremiah Knol"
 
 
@@ -24,12 +24,10 @@ class StoryRecipe:
 
     def __init__(self, filename):
         """Read story data from file. Format and store it."""
-        self.name = None     # name of the story shown in menu
-        self.labels = []     # list of labels required for this story
-        self.recipe = []     # list of strings and labels to display in order
-
-        # list of IDs of compatible wordlists
-        self.safe_wordlists = []
+        self.name = ""      # name of the story shown in menu
+        self.labels = {}    # key=label, value=list of sublabels for label
+        self.recipe = []    # RecipeText and RecipeLabel objects, in order
+        self.safe_wordlists = []    # IDs of compatible wordlists
 
         file = open(filename, 'r')
         self.name = file.readline().strip()
@@ -39,51 +37,95 @@ class StoryRecipe:
         self.__splitRecipe(story)
 
     def __splitRecipe(self, story):
-        """Split story into plaintext and labels.
+        """Split story into RecipeText and RecipeLabel objects.
 
-        Each section is appended to self.recipe.
-        Each label is appended to self.labels."""
-        start = 0
+        Each object is appended to self.recipe.
+        Each label creates a key in self.labels."""
+        start = 0   # The position we are looking at within the story.
         while True:
             label_begin = story.find('{', start)
 
-            # If there are no more labels, the rest is plaintext.
+            # If there are no more labels, the rest is plaintext. Add to story.
             if label_begin < 0:
                 self.recipe.append(story[start:])
-                return
+                break
 
+            # If this is not a label, get the plaintext before the label.
+            if label_begin != start:
+                self.recipe.append(story[start:label_begin])
+                start = label_begin
+                continue
+
+            # Otherwise, we know that this is a label.
             label_end = story.find('}', label_begin + 1)
             full_label = story[label_begin:label_end + 1]
 
-            # It this is a label...
-            if label_begin == start:
+            # Add the label to the story recipe.
+            label = RecipeLabel(full_label)
+            self.recipe.append(label)
 
-                # Add it to the story.
-                self.recipe.append(full_label)
-                start = label_end + 1
+            # Save label and sublabel so we can check wordlist compatibility.
+            lab = label.label
+            sub = label.sublabel
+            if lab not in self.labels.keys():
+                self.labels[lab] = []
+            if sub and sub not in self.labels[lab]:
+                self.labels[lab].append(sub)
 
-                # Get just the label without any suffix.
-                suffix_start = full_label.find(':')
-                label = full_label[1:suffix_start]
-
-                # Add it into the list of labels, without allowing copies.
-                if label not in self.labels:
-                    self.labels.append(label)
-
-            # If this is not a label, it must be plain text.
-            else:
-                self.recipe.append(story[start:label_begin])
-                start = label_begin
+            start = label_end + 1
 
     def checkWordListCompatibility(self, wordlists):
         """Find compatible wordlists for this recipe, mark them."""
         self.safe_wordlists = []
+
+        # Use i to loop so we keep track of the index of the wordlist.
         for i in range(len(wordlists)):
+
             for label in self.labels:
-                if label not in wordlists[i].labels:
+
+                if label not in wordlists[i].labels.keys():
                     break
+
+                for sublabel in self.labels[label]:
+                    if sublabel not in wordlists[i].labels[label]:
+                        break
+
+                # If no break, continue, otherwise break again.
+                else:
+                    continue
+                break
+
+            # If no breaks, this wordlist is compatible.
             else:
                 self.safe_wordlists.append(i)
+
+
+class RecipeLabel:
+    """Label section of a StoryRecipe.recipe list.
+
+        Examples of valid label content:
+            "{LabelName}"
+            "{Person:1}"
+            "{Animal:3/Sound}"
+        """
+
+    def __init__(self, content):
+        self.content = content
+        self.id = ""
+        self.sublabel = ""
+
+        # Get the label, which comes before ':'.
+        tmp = self.content[1:-1].split(':')
+        self.label = tmp.pop(0)
+
+        # If there is a suffix, get id, which comes before '/'.
+        if tmp:
+            tmp = tmp[0].split('/')
+            self.id = tmp.pop(0)
+
+            # If there is a sublabel after '/', get it.
+            if tmp:
+                self.sublabel = tmp[0]
 
 
 class WordList:
@@ -91,22 +133,15 @@ class WordList:
 
     def __init__(self, filename):
         """Read wordlist data from file. Format and store it."""
-        self.name = None      # name of the wordlist shown in the menu
-        self.labels = []      # list of labels included in this wordlist
-        self.words = {}       # dict matching label to its list of random words
+        self.name = None    # name of the wordlist shown in the menu
+        self.labels = {}    # key=label, value=list of sublabels
+        self.words = {}     # key=label, value=list of random word options
 
         # Open file, read data, and save it into this object.
         file = open(filename, 'r')
         self.name = file.readline().strip()
         self.__readWords(file)
         file.close()
-
-    def __readLabels(self, file):
-        """Read the next non-blank line."""
-        while True:
-            x = file.readline().strip()
-            if x:
-                return x
 
     def __readWords(self, file):
         """Read each label and its random word options."""
@@ -121,10 +156,10 @@ class WordList:
 
             # If previous line was blank, this one is a label.
             elif label == None:
-                label = line
-                if label not in self.labels:
-                    self.labels.append(label)
-                    self.words[label] = []
+                labels = line.split('/')
+                label = labels.pop(0)
+                self.labels[label] = labels
+                self.words[label] = []
 
             # Otherwise, this line is a word option for the label.
             else:
@@ -137,8 +172,8 @@ class RandomLabel:
     """Randomized label data and functions for this label's expansion."""
 
     def __init__(self, label, words):
-        self.label = label  # label used in the story recipe
-        self.words = words  # list of primary/secondary word combos
+        self.label = label
+        self.words = words  # list of label/sublabel word option combos
         self.ids = {}       # memory ids for this label, popped from pool
         self.pool = self.words.copy()   # remaining word options for ids
 
@@ -152,7 +187,6 @@ class RandomLabel:
             self.ids[id] = self.pool.pop(i)
 
         return self.ids[id]
-
 
 
 class RandomLabelDict:
@@ -196,10 +230,10 @@ class Story:
         self.story = ""
 
         for section in self.recipe:
-            if section[0] != '{' or section[-1] != '}':
+            if type(section) is str:
                 self.story += section
             else:
-                self.story += self.labels.expandLabel(section)
+                self.story += self.labels.expandLabel(section.content)
 
     def display(self):
         """Print the generated story."""

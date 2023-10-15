@@ -1,52 +1,69 @@
-###############################################################################
-# Story Circus
-# by Jeremiah Knol
-#
-# Final Project for:
-#    SDEV140-12K-LB-202320-LA-81X
-#    Intro. to Software Development
-#    Ivy Tech Community College
-#
-# This is a silly random story generator.
-# The story blueprints and random word lists are loaded from files.
-# Users can select the story and word list they would like to generate.
-###############################################################################
+"""
+Story Circus
+by Jeremiah Knol
+10-15-2023
+
+Final Project for:
+    SDEV140-12K-LB-202320-LA-81X
+    Intro. to Software Development
+    Ivy Tech Community College
+
+This is a silly random story generator.
+The story blueprints and random word lists are loaded from files.
+Users can select the story and word list they would like to generate.
+"""
 
 import os
 import random
 
-__version__ = "v1.1"
+__version__ = "v1.2"
 __author__ = "Jeremiah Knol"
 
 
 class StoryRecipe:
-    """Data and functions needed for a story blueprint."""
+    """Story blueprint.
+
+    Public instance variables:
+        name = title of story, shown in menu
+        labels = dictionary of labels in this story
+            - key = label
+            - value = list of sublabels for label
+        recipe = list of story sections, in order
+            - Items of type "str" are displayed as-is.
+            - Items of type "RecipeLabel" are displayed as a random choice.
+        safe_wordlists = list of wordlist IDs which are compatible
+    """
 
     def __init__(self, filename):
-        """Read story data from file. Format and store it."""
-        self.name = ""      # name of the story shown in menu
-        self.labels = {}    # key=label, value=list of sublabels for label
-        self.recipe = []    # RecipeText and RecipeLabel objects, in order
-        self.safe_wordlists = []    # IDs of compatible wordlists
+        """Read story data from file. Format and store it.
 
-        file = open(filename, 'r')
-        self.name = file.readline().strip()
-        story = file.read().strip()
-        file.close()
+        The first line of the file is the title of the story.
+        The rest of the file is the story itself.
+
+        The story is split into a list of plaintext and RecipeLabel objects.
+        Each object is appended to self.recipe.
+
+        Each label creates a key in self.labels.
+        Each sublabel is added to that label's list of sublabels.
+        """
+        self.name = ""
+        self.labels = {}
+        self.recipe = []
+        self.safe_wordlists = []
+
+        with open(filename, 'r') as file:
+            self.name = file.readline().strip()
+            story = file.read().strip()
 
         self.__splitRecipe(story)
 
     def __splitRecipe(self, story):
-        """Split story into RecipeText and RecipeLabel objects.
-
-        Each object is appended to self.recipe.
-        Each label creates a key in self.labels."""
         start = 0   # The position we are looking at within the story.
         while True:
             label_begin = story.find('{', start)
 
             # If there are no more labels, the rest is plaintext. Add to story.
-            if label_begin < 0:
+            if label_begin == -1:
                 self.recipe.append(story[start:])
                 break
 
@@ -75,48 +92,48 @@ class StoryRecipe:
             start = label_end + 1
 
     def checkWordListCompatibility(self, wordlists):
-        """Find compatible wordlists for this recipe, mark them."""
+        """Find compatible wordlists for this recipe; mark them by index.
+
+        A wordlist is considered compatible if it declares each label used in
+        the story, and if each label also has each sublabel used in the story.
+        """
         self.safe_wordlists = []
 
         # Use i to loop so we keep track of the index of the wordlist.
         for i in range(len(wordlists)):
-
-            for label in self.labels:
-
-                if label not in wordlists[i].labels.keys():
-                    break
-
-                for sublabel in self.labels[label]:
-                    if sublabel not in wordlists[i].words[label].labels:
-                        break
-
-                # If no break, continue, otherwise break again.
-                else:
-                    continue
-                break
-
-            # If no breaks, this wordlist is compatible.
-            else:
+            if self.__labelsAreCompatible(wordlists[i]):
                 self.safe_wordlists.append(i)
-        waitForEnter()
+
+    def __labelsAreCompatible(self, wordlist):
+        for label in self.labels:
+            if label not in wordlist.labels.keys():
+                return False
+            for sublabel in self.labels[label]:
+                if sublabel not in wordlist.words[label].labels:
+                    return False
+        return True
 
 
 class RecipeLabel:
-    """Label section of a StoryRecipe.recipe list.
+    """Label section of a StoryRecipe object's recipe list.
 
-        Examples of valid label content:
-            "{LabelName}"
-            "{Person:1}"
-            "{Animal:3/Sound}"
-        """
+    Public instance variables:
+        label = the label, comes before ':' if there is a suffix
+        id = the id, comes after ':' and before '/' if there is a sublabel
+        sublabel = the sublabel, comes after '/'
+
+    Examples of valid label content:
+        "{LabelName}"
+        "{Person:1}"
+        "{Animal:3/Sound}"
+    """
 
     def __init__(self, content):
-        self.content = content
         self.id = None
         self.sublabel = None
 
         # Get the label, which comes before ':'.
-        tmp = self.content[1:-1].split(':')
+        tmp = content[1:-1].split(':')
         self.label = tmp.pop(0)
 
         # If there is a suffix, get id, which comes before '/'.
@@ -130,22 +147,36 @@ class RecipeLabel:
 
 
 class WordList:
-    """Data and functions needed for a wordlist."""
+    """Labels and their word options for filling in a story.
+
+    Public instance variables:
+        name = title of wordlist, shown in menu
+        labels = dictionary of labels in this wordlist
+            - key = label
+            - value = list of sublabels for label
+        words = dictionary of WordLabel objects from wordlist
+    """
 
     def __init__(self, filename):
-        """Read wordlist data from file. Format and store it."""
-        self.name = None    # name of the wordlist shown in the menu
-        self.labels = {}    # key=label, value=list of sublabels for label
-        self.words = {}     # key=label, value=WordLabel
+        """Read wordlist data from file. Format and store it.
 
-        # Open file, read data, and save it into this object.
-        file = open(filename, 'r')
-        self.name = file.readline().strip()
-        self.__readWords(file)
-        file.close()
+        The first line of the file is the title of the wordlist.
+        The rest of the file is the wordlist itself.
+
+        A label is declared by placing it on its own line.
+        Each label is followed by a list of word options for that label.
+        These lines can be indented however you like.
+        Adding a blank line closes the label so you can add another.
+        """
+        self.name = None
+        self.labels = {}
+        self.words = {}
+
+        with open(filename, 'r') as file:
+            self.name = file.readline().strip()
+            self.__readWords(file)
 
     def __readWords(self, file):
-        """Read each label and its random word options."""
         label = None
         line = file.readline()
         while line:
@@ -169,52 +200,86 @@ class WordList:
 
 
 class WordLabel:
+    """Label section of a StoryRecipe object's recipe list.
+
+    Public instance variables:
+        labels = list of labels, first element is main, the rest are sublabels
+        words = list of word options, as dictionaries
+        ids = dictionary of remembered choices popped from pool
+        pool = copy of words to pop choices from
+
+    Examples of valid label content:
+        "{LabelName}"
+        "{Person:1}"
+        "{Animal:3/Sound}"
+    """
 
     def __init__(self, labels):
         self.labels = labels
         self.words = []
+        self.ids = None
+        self.pool = None
 
-    def addWordOption(self, word):
-        opts = word.split('/')
+    def addWordOption(self, words):
+        """Add a word option to the list of words.
+
+        Inputs:
+            words = words for each sublabel, in order, each separated by '/'
+
+        A dictionary is created with each sublabel as a key, and each word
+        connected to its sublabel. This dictionary is added to the word list.
+        """
+        opts = words.split('/')
         options = {}
         for i in range(len(self.labels)):
             options[self.labels[i]] = opts[i]
         self.words.append(options)
 
     def reset(self):
+        """Clear the remembered words, and reset the pool for them."""
         self.ids = {}
         self.pool = self.words.copy()
 
     def expanded(self, id, sublabel):
+        """Expand this word label, by id and sublabel.
 
+        Returns the expanded label as a string.
+
+        If sublabel is None, the main label will be used.
+        If id is None, any random choice can be chosen.
+        If id doesn't exist, it is created and given a random choice from pool.
+        If id does exist, its random choice is remembered and used again.
+        """
         if sublabel == None:
             sublabel = self.labels[0]
-
         if id == None:
             return random.choice(self.words)[sublabel]
-
         if id not in self.ids.keys():
             x = random.randrange(len(self.pool))
             self.ids[id] = self.pool.pop(x)
-
         return self.ids[id][sublabel]
 
 
 class Story:
-    """Single-use story object. Create, generate, display, and discard."""
+    """Single rendering of a story.
+
+    Public instance variables:
+        story = string to store the textual story in
+        recipe = list of plaintext and RecipeLabel objects in display order
+        labels = dictionary of WordLabel objects for filling in RecipeLabels
+    """
 
     def __init__(self, recipe, wordlist):
-        self.story = None
+        self.story = ""
         self.recipe = recipe.recipe
         self.labels = wordlist.words
 
+        # Reset WordLabel objects for this story.
         for wordlabel in self.labels.keys():
             self.labels[wordlabel].reset()
 
     def generate(self):
-        """Generate the story, expanding all random labels."""
-        self.story = ""
-
+        """Generate the story, expanding plaintext and RecipeLabel objects."""
         for section in self.recipe:
             if type(section) is str:
                 self.story += section
@@ -225,7 +290,7 @@ class Story:
                 self.story += self.labels[label].expanded(id, sublabel)
 
     def display(self):
-        """Print the generated story."""
+        """Display the generated story."""
         clearScreen()
         print(self.story)
 

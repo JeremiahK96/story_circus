@@ -16,7 +16,7 @@ Users can select the story and word list they would like to generate.
 import os
 import random
 
-__version__ = "v1.2"
+__version__ = "v1.3"
 __author__ = "Jeremiah Knol"
 
 
@@ -306,30 +306,6 @@ STORY_DIR = "data/"
 WORDS_DIR = "data/"
 
 
-def main():
-    """Welcome user and enter the main program loop."""
-    Welcome()
-    waitForEnter()
-
-    recipes = loadStoryRecipes()
-    wordlists = loadWordLists()
-    checkStoryCompatibilities(recipes, wordlists)
-
-    mode = NEW_GAME
-    while mode != QUIT:
-
-        if mode == NEW_GAME:
-            recipe = pickStoryRecipe(recipes)
-            wordlist = pickWordList(wordlists, recipe)
-
-        story = Story(recipe, wordlist)
-        story.generate()
-        story.display()
-        waitForEnter()
-
-        mode = getNextMode()
-
-
 def Welcome():
     """Display the title splash, and explain the program to the user."""
     print("Story Circus", __version__, "by", __author__)
@@ -440,7 +416,3 @@ def clearScreen():
         os.system('cls')
     else:
         os.system('clear')
-
-
-if __name__ == "__main__":
-    main()

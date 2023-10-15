@@ -87,7 +87,7 @@ class StoryRecipe:
                     break
 
                 for sublabel in self.labels[label]:
-                    if sublabel not in wordlists[i].labels[label]:
+                    if sublabel not in wordlists[i].words[label].labels:
                         break
 
                 # If no break, continue, otherwise break again.
@@ -98,6 +98,7 @@ class StoryRecipe:
             # If no breaks, this wordlist is compatible.
             else:
                 self.safe_wordlists.append(i)
+        waitForEnter()
 
 
 class RecipeLabel:
@@ -111,8 +112,8 @@ class RecipeLabel:
 
     def __init__(self, content):
         self.content = content
-        self.id = ""
-        self.sublabel = ""
+        self.id = None
+        self.sublabel = None
 
         # Get the label, which comes before ':'.
         tmp = self.content[1:-1].split(':')
@@ -134,8 +135,8 @@ class WordList:
     def __init__(self, filename):
         """Read wordlist data from file. Format and store it."""
         self.name = None    # name of the wordlist shown in the menu
-        self.labels = {}    # key=label, value=list of sublabels
-        self.words = {}     # key=label, value=list of random word options
+        self.labels = {}    # key=label, value=list of sublabels for label
+        self.words = {}     # key=label, value=WordLabel
 
         # Open file, read data, and save it into this object.
         file = open(filename, 'r')
@@ -156,65 +157,47 @@ class WordList:
 
             # If previous line was blank, this one is a label.
             elif label == None:
-                labels = line.split('/')
-                label = labels.pop(0)
-                self.labels[label] = labels
-                self.words[label] = []
+                label = line.split('/')
+                self.labels[label[0]] = label[1:]
+                self.words[label[0]] = WordLabel(label)
 
             # Otherwise, this line is a word option for the label.
             else:
-                self.words[label].append(line)
+                self.words[label[0]].addWordOption(line)
 
             line = file.readline()
 
 
-class RandomLabel:
-    """Randomized label data and functions for this label's expansion."""
+class WordLabel:
 
-    def __init__(self, label, words):
-        self.label = label
-        self.words = words  # list of label/sublabel word option combos
-        self.ids = {}       # memory ids for this label, popped from pool
-        self.pool = self.words.copy()   # remaining word options for ids
+    def __init__(self, labels):
+        self.labels = labels
+        self.words = []
 
-    def byID(self, id):
-        """Expands this label by id.
+    def addWordOption(self, word):
+        opts = word.split('/')
+        options = {}
+        for i in range(len(self.labels)):
+            options[self.labels[i]] = opts[i]
+        self.words.append(options)
 
-        If the id does not exist, pop an option from the pool and create it.
-        """
+    def reset(self):
+        self.ids = {}
+        self.pool = self.words.copy()
+
+    def expanded(self, id, sublabel):
+
+        if sublabel == None:
+            sublabel = self.labels[0]
+
+        if id == None:
+            return random.choice(self.words)[sublabel]
+
         if id not in self.ids.keys():
-            i = random.randrange(len(self.pool))
-            self.ids[id] = self.pool.pop(i)
+            x = random.randrange(len(self.pool))
+            self.ids[id] = self.pool.pop(x)
 
-        return self.ids[id]
-
-
-class RandomLabelDict:
-    """Dictionary of RandomLabel objects, with function to expand them."""
-
-    def __init__(self, recipe, wordlist):
-        self.random_labels = {}
-        for label in recipe.labels:
-            new_label = RandomLabel(label, wordlist.words[label])
-            self.random_labels[label] = new_label
-
-    def expandLabel(self, full_label):
-        """Expand a label in this list, handling any extra features."""
-
-        # Find the label and suffix.
-        label_end = full_label.find(':')
-        label = full_label[1:label_end]
-        id = full_label[label_end + 1:-1]
-
-        # Find the RandomLabel which matches this label.
-        rand_label = self.random_labels[label]
-
-        # Handle the simple case. Just the label, no suffix.
-        if label_end == -1:
-            return random.choice(rand_label.words)
-
-        # Handle cases where the suffix is an id for the label.
-        return rand_label.byID(id)
+        return self.ids[id][sublabel]
 
 
 class Story:
@@ -223,7 +206,10 @@ class Story:
     def __init__(self, recipe, wordlist):
         self.story = None
         self.recipe = recipe.recipe
-        self.labels = RandomLabelDict(recipe, wordlist)
+        self.labels = wordlist.words
+
+        for wordlabel in self.labels.keys():
+            self.labels[wordlabel].reset()
 
     def generate(self):
         """Generate the story, expanding all random labels."""
@@ -233,7 +219,10 @@ class Story:
             if type(section) is str:
                 self.story += section
             else:
-                self.story += self.labels.expandLabel(section.content)
+                label = section.label
+                id = section.id
+                sublabel = section.sublabel
+                self.story += self.labels[label].expanded(id, sublabel)
 
     def display(self):
         """Print the generated story."""

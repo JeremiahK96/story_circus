@@ -65,50 +65,20 @@ class Root:
     def __start(self):
         self.splash.destroy()
         self.start.destroy()
-        self.buttons = []
-        self.prev_id = None
-        self.__pickStoryRecipe()
 
-    def __pickStoryRecipe(self):
-        self.title.config(text = "Select a Story")
-
-        names = map(lambda r: r.name, self.recipes)
-        self.__showOptions(names, self.__setRecipe)
-        self.buttons[-2]["state"] = tk.DISABLED
-
-    def __setRecipe(self, id):
-        self.recipe = self.recipes[id]
-        self.buttons[-1]["state"] = tk.NORMAL
-
-        if self.prev_id != None:
-            self.buttons[self.prev_id].configure(
-                bg = BUTTON_BG,
-                fg = BUTTON_FG
-            )
-        self.prev_id = id
-
-        self.buttons[id].configure(
-            bg = BUTTON_ALT,
-            fg = BUTTON_BG
-        )
-
-    def __showOptions(self, options, func):
-        i = 0
-        for opt in options:
-            button = tk.Button(
-                self.w,
-                text = opt,
-                font = TEXT_FONT,
-                bg = BUTTON_BG,
-                fg = BUTTON_FG,
-                command = lambda c = i: func(c)
-            )
-            button.pack(pady = BUTTON_PAD)
-            self.buttons.append(button)
-            i += 1
+        self.opt_frame = tk.Frame()
+        self.opt_frame.pack()
+        self.opt_buttons = []
 
         self.nav_frame = tk.Frame()
+        self.nav_frame.pack()
+        self.nav_buttons = []
 
+        self.__addNavButtons()
+
+        self.__pickStoryRecipe()
+
+    def __addNavButtons(self):
         button = tk.Button(
             self.nav_frame,
             text = "Quit",
@@ -121,7 +91,7 @@ class Root:
             row = 0, column = 0,
             padx = BUTTON_PAD, pady = BUTTON_PAD
         )
-        self.buttons.append(button)
+        self.nav_buttons.append(button)
 
         button = tk.Button(
             self.nav_frame,
@@ -129,12 +99,14 @@ class Root:
             font = TEXT_FONT,
             bg = BUTTON_BG,
             fg = BUTTON_FG,
+            command = self.__pickStoryRecipe,
+            state = tk.DISABLED
         )
         button.grid(
             row = 0, column = 1,
             padx = BUTTON_PAD, pady = BUTTON_PAD
         )
-        self.buttons.append(button)
+        self.nav_buttons.append(button)
 
         button = tk.Button(
             self.nav_frame,
@@ -144,13 +116,81 @@ class Root:
             fg = BUTTON_FG,
             state = tk.DISABLED
         )
-        self.buttons.append(button)
+        self.nav_buttons.append(button)
         button.grid(
             row = 0, column = 2,
             padx = BUTTON_PAD, pady = BUTTON_PAD
         )
 
-        self.nav_frame.pack()
+    def __pickStoryRecipe(self):
+        self.title.config(text = "Select a Story")
+
+        names = map(lambda r: r.name, self.recipes)
+        self.__showOptions(names, self.__setRecipe, self.__pickWordList)
+        self.nav_buttons[-2]["state"] = tk.DISABLED
+
+    def __setRecipe(self, id):
+        self.recipe = self.recipes[id]
+        self.__updateOptButtons(id)
+
+    def __pickWordList(self):
+        self.title.config(text = "Select a Word List")
+
+        safe = self.recipe.safe_wordlists
+        if len(safe) == 1:
+            self.options = self.wordlists[safe[0]]
+            quit()
+        else:
+            self.options = []
+            for id in safe:
+                self.options.append(self.wordlists[id])
+            names = map(lambda w: w.name, self.options)
+            self.__showOptions(names, self.__setWordList, exit)
+            self.nav_buttons[-2]["state"] = tk.NORMAL
+
+    def __setWordList(self, id):
+        self.wordlist = self.options[id]
+        self.__updateOptButtons(id)
+
+    def __updateOptButtons(self, id):
+        self.nav_buttons[-1]["state"] = tk.NORMAL
+
+        if self.prev_id != None:
+            self.opt_buttons[self.prev_id].configure(
+                bg = BUTTON_BG,
+                fg = BUTTON_FG
+            )
+        self.prev_id = id
+
+        self.opt_buttons[id].configure(
+            bg = BUTTON_ALT,
+            fg = BUTTON_BG
+        )
+
+    def __showOptions(self, options, choice_func, next_func):
+        for i in range(len(self.opt_buttons) - 1, -1, -1):
+            self.opt_buttons[i].destroy()
+            del self.opt_buttons[i]
+        self.prev_id = None
+
+        i = 0
+        for opt in options:
+            button = tk.Button(
+                self.opt_frame,
+                text = opt,
+                font = TEXT_FONT,
+                bg = BUTTON_BG,
+                fg = BUTTON_FG,
+                command = lambda c = i: choice_func(c)
+            )
+            button.pack(pady = BUTTON_PAD)
+            self.opt_buttons.append(button)
+            i += 1
+
+        self.nav_buttons[-1].configure(
+            command = next_func,
+            state = tk.DISABLED
+        )
 
 
 def oldmain():

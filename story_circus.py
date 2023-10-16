@@ -16,7 +16,7 @@ Users can select the story and word list they would like to generate.
 import os
 import random
 
-__version__ = "v1.3"
+__version__ = "v2.0"
 __author__ = "Jeremiah Knol"
 
 

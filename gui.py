@@ -1,12 +1,14 @@
 """Graphical User Interface for program using Tkinter"""
 
+import os
 import story_circus as sc
 import tkinter as tk
+import tkinter.scrolledtext as st
 
-
-ROOT_PAD = "20px"
 
 TITLE_FONT = ("Arial 30 bold")
+TITLE_PAD = "20px"
+
 TEXT_FONT = ("Arial 20")
 
 BUTTON_BG = "#dfdfdf"
@@ -21,19 +23,21 @@ class Root:
 
         self.w = tk.Tk()
         self.w.title("Story Circus " + sc.__version__)
-        self.w.attributes('-type', 'dialog')
 
-        self.title = tk.Label(
-            self.w,
-            font = TITLE_FONT
-        )
-        self.title.pack()
+        if os.name != 'nt':
+            self.w.attributes('-type', 'dialog')
 
         self.w.after(1, self.main())
 
         self.w.mainloop()
 
     def main(self):
+        self.title = tk.Label(
+            self.w,
+            font = TITLE_FONT
+        )
+        self.title.pack(padx = TITLE_PAD, pady = TITLE_PAD)
+
         self.welcome()
 
         self.recipes = sc.loadStoryRecipes()
@@ -60,18 +64,18 @@ class Root:
             font = TEXT_FONT,
             command = self.__start
         )
-        self.start.pack()
+        self.start.pack(padx = TITLE_PAD, pady = TITLE_PAD)
 
     def __start(self):
         self.splash.destroy()
         self.start.destroy()
 
-        self.opt_frame = tk.Frame()
+        self.opt_frame = tk.Frame(self.w)
         self.opt_frame.pack()
         self.opt_buttons = []
 
-        self.nav_frame = tk.Frame()
-        self.nav_frame.pack()
+        self.nav_frame = tk.Frame(self.w)
+        self.nav_frame.pack(padx = TITLE_PAD, pady = TITLE_PAD)
         self.nav_buttons = []
 
         self.__addNavButtons()
@@ -85,7 +89,7 @@ class Root:
             font = TEXT_FONT,
             bg = BUTTON_BG,
             fg = BUTTON_FG,
-            command = self.w.destroy
+            command = exit
         )
         button.grid(
             row = 0, column = 0,
@@ -138,14 +142,14 @@ class Root:
 
         safe = self.recipe.safe_wordlists
         if len(safe) == 1:
-            self.options = self.wordlists[safe[0]]
-            quit()
+            self.wordlist = self.wordlists[safe[0]]
+            self.__playStory()
         else:
             self.options = []
             for id in safe:
                 self.options.append(self.wordlists[id])
             names = map(lambda w: w.name, self.options)
-            self.__showOptions(names, self.__setWordList, exit)
+            self.__showOptions(names, self.__setWordList, self.__playStory)
             self.nav_buttons[-2]["state"] = tk.NORMAL
 
     def __setWordList(self, id):
@@ -192,28 +196,102 @@ class Root:
             state = tk.DISABLED
         )
 
+    def __playStory(self):
+        Story(self)
+        self.__pickStoryRecipe()
 
-def oldmain():
-    sc.Welcome()
-    sc.waitForEnter()
 
-    recipes = sc.loadStoryRecipes()
-    wordlists = sc.loadWordLists()
-    sc.checkStoryCompatibilities(recipes, wordlists)
+class Story:
 
-    mode = sc.NEW_GAME
-    while mode != sc.QUIT:
+    def __init__(self, root):
+        self.root = root
+        self.recipe = root.recipe
+        self.wordlist = root.wordlist
 
-        if mode == sc.NEW_GAME:
-            recipe = sc.pickStoryRecipe(recipes)
-            wordlist = sc.pickWordList(wordlists, recipe)
+        self.title = self.recipe.name
+        if self.title != self.wordlist.name:
+            self.title += " (" + self.wordlist.name + ")"
 
-        story = sc.Story(recipe, wordlist)
+        self.w = tk.Toplevel()
+        self.w.title(self.title)
+
+        if os.name != 'nt':
+            self.w.attributes('-type', 'dialog')
+
+        self.w.transient(root.w)
+        self.w.grab_set()
+
+        self.w.after(1, self.main())
+
+        self.w.mainloop()
+
+    def main(self):
+        self.title = tk.Label(
+            self.w,
+            text = self.title,
+            font = TITLE_FONT
+        )
+        self.title.pack()
+
+        self.story_text = st.ScrolledText(
+            self.w,
+            wrap = tk.WORD,
+            width = 40,
+            height = 10,
+            font = TEXT_FONT,
+            state = tk.DISABLED
+        )
+        self.story_text.pack()
+
+        frame = tk.Frame(self.w)
+        frame.pack()
+
+        tk.Button(
+            frame,
+            text = "Quit",
+            font = TEXT_FONT,
+            bg = BUTTON_BG,
+            fg = BUTTON_FG,
+            command = exit
+        ).grid(
+            row = 0, column = 0,
+            padx = BUTTON_PAD, pady = BUTTON_PAD
+        )
+
+        tk.Button(
+            frame,
+            text = "Pick New Story",
+            font = TEXT_FONT,
+            bg = BUTTON_BG,
+            fg = BUTTON_FG,
+            command = self.w.destroy
+        ).grid(
+            row = 0, column = 1,
+            padx = BUTTON_PAD, pady = BUTTON_PAD
+        )
+
+        tk.Button(
+            frame,
+            text = "Repeat Same Story",
+            font = TEXT_FONT,
+            bg = BUTTON_BG,
+            fg = BUTTON_FG,
+            command = self.__generateStory
+        ).grid(
+            row = 0, column = 2,
+            padx = BUTTON_PAD, pady = BUTTON_PAD
+        )
+
+        self.__generateStory()
+
+    def __generateStory(self):
+        story = sc.Story(self.recipe, self.wordlist)
         story.generate()
-        story.display()
-        sc.waitForEnter()
 
-        mode = sc.getNextMode()
+        self.story_text["state"] = tk.NORMAL
+        self.story_text.delete("1.0", tk.END)
+        self.story_text.insert(tk.INSERT, story.story)
+        self.story_text["state"] = tk.DISABLED
 
 
 if __name__ == "__main__":
